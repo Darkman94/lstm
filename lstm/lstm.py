@@ -75,11 +75,6 @@ class LSTMNode():
 		self.ht = np.zeros(nneurons)
 		self.Ct = np.zeros(nneurons)
 	
-	'''
-	xx -> an np array theat gives the input vector
-	ht_1 -> h_{t-1}
-	Ct_1 -> C_{t-1}
-	'''
 	def forward(self, xx, ht_1 = None, Ct_1 = None):
 		'''The forward pass of the system
 			see: http://colah.github.io/posts/2015-08-Understanding-LSTMs/
@@ -108,14 +103,12 @@ class LSTMNode():
 
 	def backward(self, dldh, dldc):
 		'''Performs backpropogations throughout the node
+			see: http://nicodjimenez.github.io/2014/08/08/lstm.html
 		
 		params:
 			dldh -> the derivative of the loss function with respect to h at time t
 			dldc -> the derivative of the loss function at time t+1 with respect to C
 		'''
-		# see:
-		# http://nicodjimenez.github.io/2014/08/08/lstm.html
-		# a great reference on the back propoagtion details
 		global params
 		global inDim
 		
