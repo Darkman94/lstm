@@ -179,11 +179,11 @@ class lstm():
 			h_prev = self.node_list[len(self.x_list) - 2].ht
 			self.node_list[len(self.x_list) - 1].forward(x, C_prev, h_prev)
 			
-	def y_list_update(self, y_list):
+	def update_network(self, y):
 		'''Performs the actual backpropogation throughout the network
 		
 		params:
-			y_list -> A list of the outputs, assumes to be of the same length as the list of
+			y -> A list of the outputs, assumes to be of the same length as the list of
 						inputs to the nodes
 		'''
 		global nneurons
@@ -191,16 +191,16 @@ class lstm():
 		#we're gonna work backwards through the graph, thus grab the last index
 		j = len(self.x_list) - 1
 		#1st node...
-		losstot = loss(self.node_list[j].ht, y_list[j])
-		diff_h = dloss(self.node_list[j].ht, y_list[j])
+		losstot = loss(self.node_list[j].ht, y[j])
+		diff_h = dloss(self.node_list[j].ht, y[j])
 		diff_C = np.zeros(nneurons)
 		self.node_list[j].backward(diff_h, diff_C)
 		j -= 1
 		
 		#...and the rest
 		while j >= 0:
-			losstot += loss(self.node_list[j].ht, y_list[j])
-			diff_h = dloss(self.node_list[j].ht, y_list[j])
+			losstot += loss(self.node_list[j].ht, y[j])
+			diff_h = dloss(self.node_list[j].ht, y[j])
 			diff_C = self.node_list[j + 1].dCt_out
 			diff_h += self.node_list[j + 1].dht_out
 			self.node_list[j].backward(diff_h, diff_C)
@@ -248,6 +248,6 @@ print(x_list)
 for _ in range(100):
 	for x in x_list:
 		machine.add_input(x)
-	tloss = machine.y_list_update(y_list)
+	tloss = machine.update_network(y_list)
 	print(tloss)
 	machine.clear()
