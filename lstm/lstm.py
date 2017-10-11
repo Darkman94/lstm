@@ -1,11 +1,6 @@
 import numpy as np
 from scipy.special import expit
 
-#WARNING there is currently an error somewhere where something becomes Nan
-#not immediatley reproducible, suspect it has to do with how the x_list is initialized
-#suspect it occurs if the numbers appearing in x_list are sufficently small, 
-#i.e. arithmetic underflow, warrants further investigation
-
 #some functions that will be used
 
 #the derivative of the tanh function
@@ -237,7 +232,12 @@ class lstm():
 		params['bc_diff'] = np.zeros_like(params['bc'])
 		params['bi_diff'] = np.zeros_like(params['bi']) 
 		params['bf_diff'] = np.zeros_like(params['bf']) 
-		params['bo_diff'] = np.zeros_like(params['bo']) 
+		params['bo_diff'] = np.zeros_like(params['bo'])
+		
+		#deal with overflow by zeroing out the term.
+		for key in params:
+			if np.isnan(params[key].max()):
+				params[key] = np.zeros_like(params[key])
 		
 
 machine = lstm()		
