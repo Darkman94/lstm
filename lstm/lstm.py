@@ -18,12 +18,12 @@ def dsigma(x):
 def loss(yy, y):
 	ans = (y - yy[0])**2
 	return ans
-	
+
 #the derivative of the loss function
-def dloss(yy,y):
+def dloss(yy, y):
 	d = np.zeros_like(yy)
 	d[0] = 2*(y - yy[0])
-	return d	
+	return d
 
 #initialize the paramaters as global variables, to be passed throughout the code
 #could've been implemented better, but this is meant merely to learn the algorithm
@@ -51,11 +51,11 @@ params['ht'] = np.zeros(nneurons)
 
 #initialize the derivatives as 0
 params['Wc_diff'] = np.zeros_like(params['Wc'])
-params['Wi_diff'] = np.zeros_like(params['Wi']) 
-params['Wf_diff'] = np.zeros_like(params['Wf']) 
-params['Wo_diff'] = np.zeros_like(params['Wo']) 
-params['bi_diff'] = np.zeros_like(params['bi']) 
-params['bf_diff'] = np.zeros_like(params['bf']) 
+params['Wi_diff'] = np.zeros_like(params['Wi'])
+params['Wf_diff'] = np.zeros_like(params['Wf'])
+params['Wo_diff'] = np.zeros_like(params['Wo'])
+params['bi_diff'] = np.zeros_like(params['bi'])
+params['bf_diff'] = np.zeros_like(params['bf'])
 params['bo_diff'] = np.zeros_like(params['bo'])
 params['bc_diff'] = np.zeros_like(params['bc'])
 
@@ -63,17 +63,17 @@ class LSTMNode():
 	'''
 	An implementation of a single node of a Long Short Term Memory network node
 	'''
-	
+
 	def __init__(self):
 		'''Initializes the network with h_{t} and C_{t} as all 0'''
 		global nneurons
 		self.ht = np.zeros(nneurons)
 		self.Ct = np.zeros(nneurons)
-	
+
 	def forward(self, xx, ht_1 = None, Ct_1 = None):
 		'''The forward pass of the system
 			see: http://colah.github.io/posts/2015-08-Understanding-LSTMs/
-		
+
 		params:
 			xx -> the input to pass through this node
 			ht_1 -> h_{t-1}, assumed to be all 0 if not specified
@@ -83,14 +83,14 @@ class LSTMNode():
 			ht_1 = np.zeros_like(self.ht)
 		if Ct_1 is None:
 			Ct_1 = np.zeros_like(self.Ct)
-		x = np.concatenate([ht_1,xx])
+		x = np.concatenate([ht_1, xx])
 		self.ft = expit(np.dot(params['Wf'], x) + params['bf'])
 		self.it = expit(np.dot(params['Wi'], x) + params['bi'])
 		self.Ctt = np.tanh(np.dot(params['Wc'], x) + params['bc'])
 		self.Ct = self.ft * Ct_1 + self.it * self.Ctt
 		self.ot = expit(np.dot(params['Wo'], x) + params['bo'])
 		self.ht = self.ot*np.tanh(self.Ct)
-		
+
 		#backpropogation needs x, h_{t-1}, and C_{t-1}
 		self.ht_1 = ht_1
 		self.Ct_1 = Ct_1
@@ -99,60 +99,60 @@ class LSTMNode():
 	def backward(self, dldh, dldc):
 		'''Performs backpropogations throughout the node
 			see: http://nicodjimenez.github.io/2014/08/08/lstm.html
-		
+
 		params:
 			dldh -> the derivative of the loss function with respect to h at time t
 			dldc -> the derivative of the loss function at time t+1 with respect to C
 		'''
 		global params
 		global inDim
-		
+
 		#derivatives along the output
 		dCt = self.ot * dldh + dldc
 		do = self.Ct * dldh
 		di = self.Ctt * dCt
 		dCtt = self.it * dCt
 		df = self.Ct * dCt
-		
+
 		#derivative along the calculations in this node
-		di_calc = dsigma(self.it) * di 
-		df_calc = dsigma(self.ft) * df 
-		do_calc = dsigma(self.ot) * do 
+		di_calc = dsigma(self.it) * di
+		df_calc = dsigma(self.ft) * df
+		do_calc = dsigma(self.ot) * do
 		dCtt_calc = dtanh(self.Ctt) * dCtt
-		
+
 		#derivatives along the input
 		params['Wi_diff'] += np.outer(di_calc, self.x)
 		params['Wf_diff'] += np.outer(df_calc, self.x)
 		params['Wo_diff'] += np.outer(do_calc, self.x)
 		params['Wc_diff'] += np.outer(dCtt_calc, self.x)
 		params['bi_diff'] += di_calc
-		params['bf_diff'] += df_calc       
+		params['bf_diff'] += df_calc
 		params['bo_diff'] += do_calc
 		params['bc_diff'] += dCtt_calc
-		
+
 		#A parameter we'll need later
 		xx = np.zeros_like(self.x)
 		xx += np.dot(params['Wi'].T, di_calc)
 		xx += np.dot(params['Wf'].T, df_calc)
 		xx += np.dot(params['Wo'].T, do_calc)
 		xx += np.dot(params['Wc'].T, dCtt_calc)
-		
+
 		#the derivatives going out the the next (previous? next backwards)
 		self.dCt_out = dCt * self.ft
 		self.dht_out = xx[inDim:]
-		
-	
-		
+
+
+
 class lstm():
 
 	def __init__(self):
 		'''Initializes the network with no nodes and no inputs'''
 		self.x_list = []
 		self.node_list = []
-	
+
 	def add_input(self, x):
 		'''Adds an input to the network
-		
+
 		params:
 			x -> The input to be added
 		'''
@@ -163,26 +163,28 @@ class lstm():
 		#need a new node to deal with it
 		if len(self.x_list) > len(self.node_list):
 			self.node_list.append(LSTMNode())
-		
+
 		#If this is the first node, need a forward pass to generate everything, without previous entries
 		if len(self.x_list) == 1:
 			self.node_list[0].forward(x)
-		
+
 		#otherwise, we have history to work with
 		else:
 			C_prev = self.node_list[len(self.x_list) - 2].Ct
 			h_prev = self.node_list[len(self.x_list) - 2].ht
 			self.node_list[len(self.x_list) - 1].forward(x, C_prev, h_prev)
-			
+
 	def update_network(self, y):
 		'''Performs the actual backpropogation throughout the network
-		
+
 		params:
 			y -> A list of the outputs, assumes to be of the same length as the list of
 						inputs to the nodes
+		Returns:
+			The total loss of the network across this training step
 		'''
 		global nneurons
-		
+
 		#we're gonna work backwards through the graph, thus grab the last index
 		j = len(self.x_list) - 1
 		#1st node...
@@ -191,7 +193,7 @@ class lstm():
 		diff_C = np.zeros(nneurons)
 		self.node_list[j].backward(diff_h, diff_C)
 		j -= 1
-		
+
 		#...and the rest
 		while j >= 0:
 			losstot += loss(self.node_list[j].ht, y[j])
@@ -199,20 +201,20 @@ class lstm():
 			diff_C = self.node_list[j + 1].dCt_out
 			diff_h += self.node_list[j + 1].dht_out
 			self.node_list[j].backward(diff_h, diff_C)
-			j -= 1 
-		
+			j -= 1
+
 		#and train the model
 		self.__update()
 		#output the loss so, that we can monitor that it's actually training
 		return losstot
-		
+
 	def clear(self):
-		'''A method to clear the list of inouts, for training purposes'''
+		'''A method to clear the list of inputs, for training purposes'''
 		self.x_list = []
-		
+
 	def __update(self, mu = 1):
 		'''An implementation of simple gradient descent.
-		
+
 		params:
 			mu -> the learning rate
 		'''
@@ -226,28 +228,31 @@ class lstm():
 		params['bf'] -= mu * params['bf_diff']
 		params['bo'] -= mu * params['bo_diff']
 		params['Wc_diff'] = np.zeros_like(params['Wc'])
-		params['Wi_diff'] = np.zeros_like(params['Wi']) 
-		params['Wf_diff'] = np.zeros_like(params['Wf']) 
-		params['Wo_diff'] = np.zeros_like(params['Wo']) 
+		params['Wi_diff'] = np.zeros_like(params['Wi'])
+		params['Wf_diff'] = np.zeros_like(params['Wf'])
+		params['Wo_diff'] = np.zeros_like(params['Wo'])
 		params['bc_diff'] = np.zeros_like(params['bc'])
-		params['bi_diff'] = np.zeros_like(params['bi']) 
-		params['bf_diff'] = np.zeros_like(params['bf']) 
+		params['bi_diff'] = np.zeros_like(params['bi'])
+		params['bf_diff'] = np.zeros_like(params['bf'])
 		params['bo_diff'] = np.zeros_like(params['bo'])
-		
+
 		#deal with overflow by zeroing out the term.
 		for key in params:
 			if np.isnan(params[key].max()):
 				params[key] = np.zeros_like(params[key])
-		
 
-machine = lstm()		
-y_list = [-0.5, 0.2, 0.1, -0.5]
-x_list = [np.random.random(inDim) for _ in y_list]
-print(x_list)
+def main():
+	machine = lstm()
+	y_list = [-0.5, 0.2, 0.1, -0.5]
+	x_list = [np.random.random(inDim) for _ in y_list]
+	print x_list
 
-for _ in range(100):
-	for x in x_list:
-		machine.add_input(x)
-	tloss = machine.update_network(y_list)
-	print(tloss)
-	machine.clear()
+	for _ in range(100):
+		for x in x_list:
+			machine.add_input(x)
+		tloss = machine.update_network(y_list)
+		print tloss
+		machine.clear()
+
+if __name__ == '__main__':
+	main()
