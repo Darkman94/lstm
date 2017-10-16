@@ -245,13 +245,13 @@ def main():
 	machine = lstm()
 	y_list = [-0.5, 0.2, 0.1, -0.5]
 	x_list = [np.random.random(inDim) for _ in y_list]
-	print x_list
+	print(x_list)
 
 	for _ in range(100):
 		for x in x_list:
 			machine.add_input(x)
 		tloss = machine.update_network(y_list)
-		print tloss
+		print(tloss)
 		machine.clear()
 
 if __name__ == '__main__':
